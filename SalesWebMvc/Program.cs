@@ -9,8 +9,8 @@ namespace SalesWebMVC
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-        builder.Services.AddControllersWithViews();
+            builder.Services.AddDbContext<SalesWebMVCContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("SalesWebMVCContext") ?? throw new InvalidOperationException("Connection string 'SalesWebMVCContext' not found.")));
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
