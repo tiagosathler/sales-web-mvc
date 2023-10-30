@@ -10,4 +10,4 @@ WakaTime:
 
 [![wakatime](https://wakatime.com/badge/user/691e767c-3fe9-496d-b84e-c5eb77c21835/project/018b8135-c9ba-4015-b5db-ae9994ec5bd1.svg)](https://wakatime.com/badge/user/691e767c-3fe9-496d-b84e-c5eb77c21835/project/018b8135-c9ba-4015-b5db-ae9994ec5bd1)
 
-(under construction / em contrução)
+(under construction / em construção)
