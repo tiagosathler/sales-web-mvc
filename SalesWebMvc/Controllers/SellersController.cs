@@ -28,7 +28,6 @@ namespace SalesWebMVC.Controllers
 		[ValidateAntiForgeryToken]
 		public IActionResult Create(Seller seller)
 		{
-			seller.Department = new Department(50, "Xablau");
 			_sellerService.Insert(seller);
 			return RedirectToAction(nameof(Index));
 		}
