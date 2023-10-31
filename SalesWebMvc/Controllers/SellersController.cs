@@ -4,19 +4,33 @@ using SalesWebMVC.Services;
 
 namespace SalesWebMVC.Controllers
 {
-    public class SellersController : Controller
-    {
-        private readonly SellerService _sellerService;
+	public class SellersController : Controller
+	{
+		private readonly SellerService _sellerService;
 
-        public SellersController(SellerService sellerService)
-        {
-            _sellerService = sellerService;
-        }
+		public SellersController(SellerService sellerService)
+		{
+			_sellerService = sellerService;
+		}
 
-        public IActionResult Index()
-        {
-            List<Seller> sellers = _sellerService.FindAll();
-            return View(sellers);
-        }
-    }
+		public IActionResult Index()
+		{
+			List<Seller> sellers = _sellerService.FindAll();
+			return View(sellers);
+		}
+
+		public IActionResult Create()
+		{
+			return View();
+		}
+
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public IActionResult Create(Seller seller)
+		{
+			seller.Department = new Department(50, "Xablau");
+			_sellerService.Insert(seller);
+			return RedirectToAction(nameof(Index));
+		}
+	}
 }
