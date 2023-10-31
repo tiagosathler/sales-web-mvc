@@ -9,7 +9,7 @@ using SalesWebMVC.Data;
 
 namespace SalesWebMVC.Migrations
 {
-    [DbContext(typeof(SalesWebMVCContext))]
+    [DbContext(typeof(Data.SalesWebMVCContext))]
     [Migration("20231031110446_Initial")]
     partial class Initial
     {

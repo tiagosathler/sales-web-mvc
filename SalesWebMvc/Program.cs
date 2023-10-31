@@ -12,28 +12,35 @@ namespace SalesWebMVC
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-            ConfigurationManager configuration = builder.Configuration;
-
-            string connection = configuration.GetConnectionString(DEFAULT_CONNECTION)!;
+            string connection = builder.Configuration.GetConnectionString(DEFAULT_CONNECTION)!;
 
             builder.Services.AddDbContext<SalesWebMVCContext>(
                 options => options
                     .UseMySql(connection, ServerVersion.AutoDetect(connection), builder => builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
 
-            // Add services to the container.
+            builder.Services.AddScoped<SeedingService>();
+
             builder.Services.AddControllersWithViews();
 
             WebApplication app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
+                Console.WriteLine("Not in development environment mode!");
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
+            }
+            else
+            {
+                Console.WriteLine("It's in development environment mode!");
+                using IServiceScope serviceScoped = app.Services.CreateScope();
+                IServiceProvider serviceProvider = serviceScoped.ServiceProvider;
+                SeedingService seedingService = serviceProvider.GetRequiredService<SeedingService>();
+                seedingService.Seed();
             }
 
             app.UseHttpsRedirection();
+
             app.UseStaticFiles();
 
             app.UseRouting();
