@@ -2,13 +2,13 @@
 {
 	public class Seller
 	{
-		public int Id { get; set; }
+		public int Id { get; set; } = default!;
 		public string Name { get; set; } = null!;
 		public string Email { get; set; } = null!;
-		public DateTime BirthDate { get; set; }
-		public double BaseSalary { get; set; }
+		public DateTime BirthDate { get; set; } = default!;
+		public double BaseSalary { get; set; } = default!;
 		public Department Department { get; set; } = default!;
-		public int DepartmentId { get; set; }
+		public int DepartmentId { get; set; } = default!;
 		public ICollection<SalesRecord> Sales { get; }
 
 		public Seller()
