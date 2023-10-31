@@ -5,12 +5,20 @@ namespace SalesWebMVC
 {
     public static class Program
     {
+        private const string DEFAULT_CONNECTION = "SalesWebMVCContext";
+        private const string MIGRATION_ASSEMBLY = "SalesWebMVC";
+
         public static void Main(string[] args)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddDbContext<SalesWebMVCContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("SalesWebMVCContext") ?? throw new InvalidOperationException("Connection string 'SalesWebMVCContext' not found.")));
+            ConfigurationManager configuration = builder.Configuration;
+
+            string connection = configuration.GetConnectionString(DEFAULT_CONNECTION)!;
+
+            builder.Services.AddDbContext<SalesWebMVCContext>(
+                options => options
+                    .UseMySql(connection, ServerVersion.AutoDetect(connection), builder => builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
