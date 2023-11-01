@@ -1,60 +1,75 @@
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using SalesWebMVC.Data;
 using SalesWebMVC.Services;
+using System.Globalization;
 
 namespace SalesWebMVC
 {
-	public static class Program
-	{
-		private const string DEFAULT_CONNECTION = "SalesWebMVCContext";
-		private const string MIGRATION_ASSEMBLY = "SalesWebMVC";
+    public static class Program
+    {
+        private const string DEFAULT_CONNECTION = "SalesWebMVCContext";
+        private const string MIGRATION_ASSEMBLY = "SalesWebMVC";
 
-		public static void Main(string[] args)
-		{
-			WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+        public static void Main(string[] args)
+        {
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-			string connection = builder.Configuration.GetConnectionString(DEFAULT_CONNECTION)!;
+            string connection = builder.Configuration.GetConnectionString(DEFAULT_CONNECTION)!;
 
-			builder.Services.AddDbContext<SalesWebMVCContext>(
-				options => options
-					.UseMySql(connection, ServerVersion.AutoDetect(connection), builder => builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
+            builder.Services.AddDbContext<SalesWebMVCContext>(
+                options => options
+                    .UseMySql(connection, ServerVersion.AutoDetect(connection), builder => builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
 
-			builder.Services.AddScoped<SeedingService>();
-			builder.Services.AddScoped<SellerService>();
-			builder.Services.AddScoped<DepartmentService>();
+            builder.Services.AddScoped<SeedingService>();
+            builder.Services.AddScoped<SellerService>();
+            builder.Services.AddScoped<DepartmentService>();
 
-			builder.Services.AddControllersWithViews();
+            builder.Services.AddControllersWithViews();
 
-			WebApplication app = builder.Build();
+            WebApplication app = builder.Build();
 
-			if (!app.Environment.IsDevelopment())
-			{
-				Console.WriteLine("Not in development environment mode!");
-				app.UseExceptionHandler("/Home/Error");
-				app.UseHsts();
-			}
-			else
-			{
-				Console.WriteLine("It's in development environment mode!");
-				using IServiceScope serviceScoped = app.Services.CreateScope();
-				IServiceProvider serviceProvider = serviceScoped.ServiceProvider;
-				SeedingService seedingService = serviceProvider.GetRequiredService<SeedingService>();
-				seedingService.Seed();
-			}
+            CultureInfo enUSCultureInfo = new("en-US");
 
-			app.UseHttpsRedirection();
+            List<CultureInfo> culturesInfo = new() { enUSCultureInfo };
 
-			app.UseStaticFiles();
+            RequestLocalizationOptions localizationOptions = new()
+            {
+                DefaultRequestCulture = new RequestCulture(enUSCultureInfo),
+                SupportedCultures = culturesInfo,
+                SupportedUICultures = culturesInfo,
+            };
 
-			app.UseRouting();
+            app.UseRequestLocalization(localizationOptions);
 
-			app.UseAuthorization();
+            if (!app.Environment.IsDevelopment())
+            {
+                Console.WriteLine("Not in development environment mode!");
+                app.UseExceptionHandler("/Home/Error");
+                app.UseHsts();
+            }
+            else
+            {
+                Console.WriteLine("It's in development environment mode!");
+                using IServiceScope serviceScoped = app.Services.CreateScope();
+                IServiceProvider serviceProvider = serviceScoped.ServiceProvider;
+                SeedingService seedingService = serviceProvider.GetRequiredService<SeedingService>();
+                seedingService.Seed();
+            }
 
-			app.MapControllerRoute(
-				name: "default",
-				pattern: "{controller=Home}/{action=Index}/{id?}");
+            app.UseHttpsRedirection();
 
-			app.Run();
-		}
-	}
+            app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            app.Run();
+        }
+    }
 }
