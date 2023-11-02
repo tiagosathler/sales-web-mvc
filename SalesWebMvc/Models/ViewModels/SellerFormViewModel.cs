@@ -9,5 +9,11 @@
 		{
 			Departments = departments;
 		}
+
+		public SellerFormViewModel(ICollection<Department> departments, Seller seller)
+			: this(departments)
+		{
+			Seller = seller;
+		}
 	}
 }
