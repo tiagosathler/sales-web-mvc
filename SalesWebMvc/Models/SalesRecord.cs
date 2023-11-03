@@ -11,7 +11,7 @@ namespace SalesWebMVC.Models
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}")]
         public DateTime Date { get; set; } = default!;
 
-        [DisplayFormat(DataFormatString = "{0:F2}")]
+        [DisplayFormat(DataFormatString = "{0:N2}")]
         public double Amount { get; set; } = default!;
 
         public SaleStatus Status { get; set; } = default!;
