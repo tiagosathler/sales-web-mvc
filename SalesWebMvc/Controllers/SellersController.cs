@@ -57,7 +57,7 @@ namespace SalesWebMVC.Controllers
 
         public async Task<IActionResult> Delete(int? id)
         {
-            return await RedirectToViewSellerOrToError(id);
+            return await RedirectToSellerViewOrToError(id);
         }
 
         [HttpPost]
@@ -80,7 +80,7 @@ namespace SalesWebMVC.Controllers
 
         public async Task<IActionResult> Details(int? id)
         {
-            return await RedirectToViewSellerOrToError(id);
+            return await RedirectToSellerViewOrToError(id);
         }
 
         public async Task<IActionResult> Edit(int? id)
@@ -139,7 +139,19 @@ namespace SalesWebMVC.Controllers
             return View(errorViewModel);
         }
 
-        private async Task<IActionResult> RedirectToViewSellerOrToError(int? id)
+        private IActionResult RedirectToError(string message)
+        {
+            return RedirectToAction(nameof(Error), new { message });
+        }
+
+        private async Task<IActionResult> RedirectToSellerFormView(Seller seller)
+        {
+            List<Department> departments = await _departmentService.FindAllAsync();
+            SellerFormViewModel sellerFormViewModel = new(departments, seller);
+            return View(sellerFormViewModel);
+        }
+
+        private async Task<IActionResult> RedirectToSellerViewOrToError(int? id)
         {
             if (!id.HasValue)
             {
@@ -155,18 +167,6 @@ namespace SalesWebMVC.Controllers
             {
                 return RedirectToError(ID_NOT_FOUND);
             }
-        }
-
-        private IActionResult RedirectToError(string message)
-        {
-            return RedirectToAction(nameof(Error), new { message });
-        }
-
-        private async Task<IActionResult> RedirectToSellerFormView(Seller seller)
-        {
-            List<Department> departments = await _departmentService.FindAllAsync();
-            SellerFormViewModel sellerFormViewModel = new(departments, seller);
-            return View(sellerFormViewModel);
         }
     }
 }
