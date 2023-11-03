@@ -1,158 +1,160 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SalesWebMVC.Data;
 using SalesWebMVC.Models;
+using SalesWebMVC.Models.ViewModels;
+using SalesWebMVC.Services;
+using SalesWebMVC.Services.Exceptions;
+using System.Diagnostics;
 
 namespace SalesWebMVC.Controllers
 {
+    [AutoValidateAntiforgeryToken]
     public class DepartmentsController : Controller
     {
-        private readonly Data.SalesWebMVCContext _context;
+        private const string ID_NOT_FOUND = "Id not found";
+        private const string ID_NOT_PROVIDER = "Id not provider";
+        private const string ID_MISMATCH = "Id mismatch";
 
-        public DepartmentsController(Data.SalesWebMVCContext context)
+        private readonly DepartmentService _departmentService;
+
+        public DepartmentsController(DepartmentService departmentService)
         {
-            _context = context;
+            _departmentService = departmentService;
         }
 
-        // GET: Departments
         public async Task<IActionResult> Index()
         {
-            return _context.Department != null ?
-                        View(await _context.Department.ToListAsync()) :
-                        Problem("Entity set 'SalesWebMVCContext.Department'  is null.");
+            List<Department> departments = await _departmentService.FindAllAsync();
+            return View(departments);
         }
 
-        // GET: Departments/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.Department == null)
+            if (!id.HasValue)
             {
-                return NotFound();
+                return RedirectToError(ID_NOT_PROVIDER);
             }
-
-            var department = await _context.Department
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (department == null)
+            try
             {
-                return NotFound();
+                Department department = await _departmentService.FindByIdAsync(id.Value);
+                return View(department);
             }
-
-            return View(department);
+            catch (NotFoundException)
+            {
+                return Redirect(ID_NOT_FOUND);
+            }
         }
 
-        // GET: Departments/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Departments/Create
-        // To protect from over posting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name")] Department department)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Add(department);
-                await _context.SaveChangesAsync();
+                return View(department);
+            }
+
+            try
+            {
+                await _departmentService.InsertAsync(department);
                 return RedirectToAction(nameof(Index));
             }
-            return View(department);
+            catch (IntegrityException e)
+            {
+                return RedirectToError(e.Message);
+            }
         }
 
-        // GET: Departments/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Department == null)
-            {
-                return NotFound();
-            }
-
-            var department = await _context.Department.FindAsync(id);
-            if (department == null)
-            {
-                return NotFound();
-            }
-            return View(department);
+            return await RedirectToDeparmentViewOrError(id);
         }
 
-        // POST: Departments/Edit/5
-        // To protect from over posting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] Department department)
         {
             if (id != department.Id)
             {
-                return NotFound();
+                return RedirectToError(ID_MISMATCH);
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(department);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!DepartmentExists(department.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                return View(department);
+            }
+
+            try
+            {
+                await _departmentService.UpdateAsync(department);
                 return RedirectToAction(nameof(Index));
             }
-            return View(department);
+            catch (NotFoundException)
+            {
+                return RedirectToError(ID_NOT_FOUND);
+            }
+            catch (IntegrityException e)
+            {
+                return RedirectToError(e.Message);
+            }
         }
 
-        // GET: Departments/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Department == null)
-            {
-                return NotFound();
-            }
-
-            var department = await _context.Department
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (department == null)
-            {
-                return NotFound();
-            }
-
-            return View(department);
+            return await RedirectToDeparmentViewOrError(id);
         }
 
-        // POST: Departments/Delete/5
         [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Department == null)
+            try
             {
-                return Problem("Entity set 'SalesWebMVCContext.Department'  is null.");
+                await _departmentService.RemoveAsync(id);
+                return RedirectToAction(nameof(Index));
             }
-            var department = await _context.Department.FindAsync(id);
-            if (department != null)
+            catch (NotFoundException)
             {
-                _context.Department.Remove(department);
+                return RedirectToError(ID_NOT_FOUND);
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            catch (IntegrityException e)
+            {
+                return RedirectToError(e.Message);
+            }
         }
 
-        private bool DepartmentExists(int id)
+        public IActionResult Error(string message)
         {
-            return (_context.Department?.Any(e => e.Id == id)).GetValueOrDefault();
+            ErrorViewModel errorViewModel = new()
+            {
+                Message = message,
+                RequestId = Activity.Current?.Id,
+            };
+            return View(errorViewModel);
+        }
+
+        private IActionResult RedirectToError(string message)
+        {
+            return RedirectToAction(nameof(Error), new { message });
+        }
+
+        private async Task<IActionResult> RedirectToDeparmentViewOrError(int? id)
+        {
+            if (!id.HasValue)
+            {
+                return RedirectToError(ID_NOT_PROVIDER);
+            }
+
+            try
+            {
+                Department department = await _departmentService.FindByIdAsync(id.Value);
+                return View(department);
+            }
+            catch (NotFoundException)
+            {
+                return RedirectToError(ID_NOT_FOUND);
+            }
         }
     }
 }
