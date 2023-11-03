@@ -16,25 +16,18 @@ namespace SalesWebMVC.Services
 
         public async Task<List<SalesRecord>> FindByDateAsync(DateTime? minDate, DateTime? maxDate)
         {
-            IQueryable<SalesRecord> queryableSalesRecord = from salesRecord in _context.SalesRecord select salesRecord;
-
-            if (minDate.HasValue)
-            {
-                queryableSalesRecord = queryableSalesRecord.Where(salesRecord => salesRecord.Date >= minDate.Value);
-            }
-            if (maxDate.HasValue)
-            {
-                queryableSalesRecord = queryableSalesRecord.Where(salesRecord => salesRecord.Date <= maxDate.Value);
-            }
-
-            return await queryableSalesRecord
-                .Include(salesRecord => salesRecord.Seller)
-                .Include(salesRecord => salesRecord.Seller.Department)
-                .OrderByDescending(salesRecord => salesRecord.Date)
+            return await CreateQuery(minDate, maxDate)
                 .ToListAsync();
         }
 
-        public async Task<List<IGrouping<Department?, SalesRecord>>> FindByDateGroupingAsync(DateTime? minDate, DateTime? maxDate)
+        public async Task<List<IGrouping<Department?, SalesRecord>>> FindByDateGroupingByDepartmentsAsync(DateTime? minDate, DateTime? maxDate)
+        {
+            return await CreateQuery(minDate, maxDate)
+                .GroupBy(salesRecord => salesRecord.Seller.Department)
+                .ToListAsync();
+        }
+
+        private IQueryable<SalesRecord> CreateQuery(DateTime? minDate, DateTime? maxDate)
         {
             IQueryable<SalesRecord> queryableSalesRecord = from salesRecord in _context.SalesRecord select salesRecord;
 
@@ -47,11 +40,10 @@ namespace SalesWebMVC.Services
                 queryableSalesRecord = queryableSalesRecord.Where(salesRecord => salesRecord.Date <= maxDate.Value);
             }
 
-            return await queryableSalesRecord
+            return queryableSalesRecord
                 .Include(salesRecord => salesRecord.Seller)
                 .Include(salesRecord => salesRecord.Seller.Department)
-                .GroupBy(salesRecord => salesRecord.Seller.Department)
-                .ToListAsync();
+                .OrderByDescending(salesRecord => salesRecord.Date);
         }
     }
 }
