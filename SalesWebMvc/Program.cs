@@ -15,31 +15,36 @@ namespace SalesWebMVC
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+            ConfigureServices(builder);
+
+            WebApplication app = ConfigureApp(builder);
+
+            app.Run();
+        }
+
+        private static void ConfigureServices(WebApplicationBuilder builder)
+        {
             string connection = builder.Configuration.GetConnectionString(DEFAULT_CONNECTION)!;
 
-            builder.Services.AddDbContext<SalesWebMVCContext>(
-                options => options
-                    .UseMySql(connection, ServerVersion.AutoDetect(connection), builder => builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
+            IServiceCollection services = builder.Services;
 
-            builder.Services.AddScoped<SeedingService>();
-            builder.Services.AddScoped<SellerService>();
-            builder.Services.AddScoped<DepartmentService>();
-            builder.Services.AddScoped<SalesRecordsService>();
+            services.AddDbContext<SalesWebMVCContext>(options =>
+                    options.UseMySql(connection, ServerVersion.AutoDetect(connection), builder =>
+                        builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
 
-            builder.Services.AddControllersWithViews();
+            services.AddScoped<SeedingService>();
+            services.AddScoped<SellerService>();
+            services.AddScoped<DepartmentService>();
+            services.AddScoped<SalesRecordsService>();
 
+            services.AddControllersWithViews();
+        }
+
+        private static WebApplication ConfigureApp(WebApplicationBuilder builder)
+        {
             WebApplication app = builder.Build();
 
-            CultureInfo enUSCultureInfo = new("en-US");
-
-            List<CultureInfo> culturesInfo = new() { enUSCultureInfo };
-
-            RequestLocalizationOptions localizationOptions = new()
-            {
-                DefaultRequestCulture = new RequestCulture(enUSCultureInfo),
-                SupportedCultures = culturesInfo,
-                SupportedUICultures = culturesInfo,
-            };
+            RequestLocalizationOptions localizationOptions = BuilderRequestLocalizationOptions();
 
             app.UseRequestLocalization(localizationOptions);
 
@@ -70,7 +75,21 @@ namespace SalesWebMVC
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
-            app.Run();
+            return app;
+        }
+
+        private static RequestLocalizationOptions BuilderRequestLocalizationOptions()
+        {
+            CultureInfo enUSCultureInfo = new("en-US");
+
+            List<CultureInfo> culturesInfo = new() { enUSCultureInfo };
+
+            return new RequestLocalizationOptions()
+            {
+                DefaultRequestCulture = new RequestCulture(enUSCultureInfo),
+                SupportedCultures = culturesInfo,
+                SupportedUICultures = culturesInfo,
+            };
         }
     }
 }
