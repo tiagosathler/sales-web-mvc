@@ -1,43 +1,49 @@
-﻿namespace SalesWebMVC.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SalesWebMVC.Models
 {
-	public class Department
-	{
-		public int Id { get; set; } = default!;
-		public string Name { get; set; } = null!;
-		public ICollection<Seller> Sellers { get; }
+    public class Department
+    {
+        public int Id { get; set; } = default!;
 
-		public Department()
-		{
-			Sellers = new HashSet<Seller>();
-		}
+        [Required(ErrorMessage = "{0} required")]
+        [StringLength(60, MinimumLength = 3, ErrorMessage = "{0} size should be between {2} and {1}")]
+        public string Name { get; set; } = null!;
 
-		public Department(int id, string name)
-			: this()
-		{
-			Id = id;
-			Name = name;
-		}
+        public ICollection<Seller> Sellers { get; }
 
-		public void AddSeller(Seller seller)
-		{
-			Sellers.Add(seller);
-		}
+        public Department()
+        {
+            Sellers = new HashSet<Seller>();
+        }
 
-		public double TotalSales(DateTime initial, DateTime final)
-		{
-			return Sellers
-				.Sum(seller => seller.TotalSales(initial, final));
-		}
+        public Department(int id, string name)
+            : this()
+        {
+            Id = id;
+            Name = name;
+        }
 
-		public override bool Equals(object? obj)
-		{
-			return obj is Department department &&
-				   Id == department.Id;
-		}
+        public void AddSeller(Seller seller)
+        {
+            Sellers.Add(seller);
+        }
 
-		public override int GetHashCode()
-		{
-			return HashCode.Combine(Id);
-		}
-	}
+        public double TotalSales(DateTime initial, DateTime final)
+        {
+            return Sellers
+                .Sum(seller => seller.TotalSales(initial, final));
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Department department &&
+                   Id == department.Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id);
+        }
+    }
 }
