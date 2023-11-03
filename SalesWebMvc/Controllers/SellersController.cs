@@ -2,145 +2,171 @@
 using SalesWebMVC.Models;
 using SalesWebMVC.Models.ViewModels;
 using SalesWebMVC.Services;
+using SalesWebMVC.Services.Exceptions;
 using System.Diagnostics;
 
 namespace SalesWebMVC.Controllers
 {
-	[AutoValidateAntiforgeryToken]
-	public class SellersController : Controller
-	{
-		private readonly SellerService _sellerService;
-		private readonly DepartmentService _departmentService;
+    [AutoValidateAntiforgeryToken]
+    public class SellersController : Controller
+    {
+        private const string ID_NOT_FOUND = "Id not found";
+        private const string ID_NOT_PROVIDER = "Id not provider";
+        private const string ID_MISMATCH = "Id mismatch";
 
-		public SellersController(SellerService sellerService, DepartmentService departmentService)
-		{
-			_sellerService = sellerService;
-			_departmentService = departmentService;
-		}
+        private readonly SellerService _sellerService;
+        private readonly DepartmentService _departmentService;
 
-		public async Task<IActionResult> Index()
-		{
-			List<Seller> sellers = await _sellerService.FindAllAsync();
-			return View(sellers);
-		}
+        public SellersController(SellerService sellerService, DepartmentService departmentService)
+        {
+            _sellerService = sellerService;
+            _departmentService = departmentService;
+        }
 
-		public async Task<IActionResult> Create()
-		{
-			List<Department> departments = await _departmentService.FindAllAsync();
-			SellerFormViewModel sellerFormViewModel = new(departments);
-			return View(sellerFormViewModel);
-		}
+        public async Task<IActionResult> Index()
+        {
+            List<Seller> sellers = await _sellerService.FindAllAsync();
+            return View(sellers);
+        }
 
-		[HttpPost]
-		public async Task<IActionResult> Create(Seller seller)
-		{
-			if (!ModelState.IsValid)
-			{
-				List<Department> departments = await _departmentService.FindAllAsync();
-				SellerFormViewModel sellerFormViewModel = new(departments, seller);
-				return View(sellerFormViewModel);
-			}
+        public async Task<IActionResult> Create()
+        {
+            List<Department> departments = await _departmentService.FindAllAsync();
+            SellerFormViewModel sellerFormViewModel = new(departments);
+            return View(sellerFormViewModel);
+        }
 
-			await _sellerService.InsertAsync(seller);
-			return RedirectToAction(nameof(Index));
-		}
+        [HttpPost]
+        public async Task<IActionResult> Create(Seller seller)
+        {
+            if (!ModelState.IsValid)
+            {
+                return await RedirectToSellerFormView(seller);
+            }
 
-		public async Task<IActionResult> Delete(int? id)
-		{
-			if (id == null)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id not provided" });
-			}
-			Seller? seller = await _sellerService.FindByIdAsync(id);
+            try
+            {
+                await _sellerService.InsertAsync(seller);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (IntegrityException e)
+            {
+                return RedirectToError(e.Message);
+            }
+        }
 
-			if (seller == null)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id not found" });
-			}
-			return View(seller);
-		}
+        public async Task<IActionResult> Delete(int? id)
+        {
+            return await RedirectToViewSellerOrToError(id);
+        }
 
-		[HttpPost]
-		public async Task<IActionResult> Delete(int id)
-		{
-			try
-			{
-				await _sellerService.RemoveAsync(id);
-				return RedirectToAction(nameof(Index));
-			}
-			catch (ApplicationException e)
-			{
-				return RedirectToAction(nameof(Error), new { message = e.Message });
-			}
-		}
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                await _sellerService.RemoveAsync(id);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (NotFoundException)
+            {
+                return RedirectToError(ID_NOT_FOUND);
+            }
+            catch (IntegrityException e)
+            {
+                return RedirectToError(e.Message);
+            }
+        }
 
-		public async Task<IActionResult> Details(int? id)
-		{
-			if (id == null)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id not provided" });
-			}
-			Seller? seller = await _sellerService.FindByIdAsync(id);
+        public async Task<IActionResult> Details(int? id)
+        {
+            return await RedirectToViewSellerOrToError(id);
+        }
 
-			if (seller == null)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id not found" });
-			}
-			return View(seller);
-		}
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (!id.HasValue)
+            {
+                return RedirectToError(ID_NOT_PROVIDER);
+            }
 
-		public async Task<IActionResult> Edit(int? id)
-		{
-			if (id == null)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id not provided" });
-			}
-			Seller? seller = await _sellerService.FindByIdAsync(id);
+            try
+            {
+                Seller seller = await _sellerService.FindByIdAsync(id.Value);
+                return await RedirectToSellerFormView(seller);
+            }
+            catch (NotFoundException)
+            {
+                return RedirectToError(ID_NOT_FOUND);
+            }
+        }
 
-			if (seller == null)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id not found" });
-			}
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, Seller seller)
+        {
+            if (!ModelState.IsValid)
+            {
+                return await RedirectToSellerFormView(seller);
+            }
 
-			List<Department> departments = await _departmentService.FindAllAsync();
-			SellerFormViewModel sellerFormViewModel = new(departments, seller);
+            if (id != seller.Id)
+            {
+                return RedirectToError(ID_MISMATCH);
+            }
 
-			return View(sellerFormViewModel);
-		}
+            try
+            {
+                await _sellerService.UpdateAsync(seller);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (NotFoundException)
+            {
+                return RedirectToError(ID_NOT_FOUND);
+            }
+            catch (IntegrityException e)
+            {
+                return RedirectToError(e.Message);
+            }
+        }
 
-		[HttpPost]
-		public async Task<IActionResult> Edit(int id, Seller seller)
-		{
-			if (!ModelState.IsValid)
-			{
-				List<Department> departments = await _departmentService.FindAllAsync();
-				SellerFormViewModel sellerFormViewModel = new(departments, seller);
-				return View(sellerFormViewModel);
-			}
-			if (id != seller.Id)
-			{
-				return RedirectToAction(nameof(Error), new { message = "Id mismatch" });
-			}
+        public IActionResult Error(string message)
+        {
+            ErrorViewModel errorViewModel = new()
+            {
+                Message = message,
+                RequestId = Activity.Current?.Id,
+            };
+            return View(errorViewModel);
+        }
 
-			try
-			{
-				await _sellerService.UpdateAsync(seller);
-				return RedirectToAction(nameof(Index));
-			}
-			catch (ApplicationException e)
-			{
-				return RedirectToAction(nameof(Error), new { message = e.Message });
-			}
-		}
+        private async Task<IActionResult> RedirectToViewSellerOrToError(int? id)
+        {
+            if (!id.HasValue)
+            {
+                return RedirectToError(ID_NOT_PROVIDER);
+            }
 
-		public IActionResult Error(string message)
-		{
-			ErrorViewModel errorViewModel = new()
-			{
-				Message = message,
-				RequestId = Activity.Current?.Id,
-			};
-			return View(errorViewModel);
-		}
-	}
+            try
+            {
+                Seller seller = await _sellerService.FindByIdAsync(id.Value);
+                return View(seller);
+            }
+            catch (NotFoundException)
+            {
+                return RedirectToError(ID_NOT_FOUND);
+            }
+        }
+
+        private IActionResult RedirectToError(string message)
+        {
+            return RedirectToAction(nameof(Error), new { message });
+        }
+
+        private async Task<IActionResult> RedirectToSellerFormView(Seller seller)
+        {
+            List<Department> departments = await _departmentService.FindAllAsync();
+            SellerFormViewModel sellerFormViewModel = new(departments, seller);
+            return View(sellerFormViewModel);
+        }
+    }
 }
