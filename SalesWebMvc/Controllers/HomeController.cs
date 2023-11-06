@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SalesWebMvc.Models;
+using SalesWebMVC.Models.ViewModels;
 using System.Diagnostics;
 
-namespace SalesWebMvc.Controllers
+namespace SalesWebMVC.Controllers
 {
     public class HomeController : Controller
     {
@@ -15,6 +15,15 @@ namespace SalesWebMvc.Controllers
 
         public IActionResult Index()
         {
+            return View();
+        }
+
+        public IActionResult About()
+        {
+            ViewData["Message"] = "Workshop ASP.Net Core 6.0 with Sales Web MVC";
+            ViewData["Professor"] = "Nelio Alves";
+            ViewData["Student"] = "Tiago Sathler";
+
             return View();
         }
 

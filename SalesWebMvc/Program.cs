@@ -1,35 +1,95 @@
-namespace SalesWebMvc;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
+using SalesWebMVC.Data;
+using SalesWebMVC.Services;
+using System.Globalization;
 
-public class Program
+namespace SalesWebMVC
 {
-    public static void Main(string[] args)
+    public static class Program
     {
-        var builder = WebApplication.CreateBuilder(args);
+        private const string DEFAULT_CONNECTION = "SalesWebMVCContext";
+        private const string MIGRATION_ASSEMBLY = "SalesWebMVC";
 
-        // Add services to the container.
-        builder.Services.AddControllersWithViews();
-
-        var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (!app.Environment.IsDevelopment())
+        public static void Main(string[] args)
         {
-            app.UseExceptionHandler("/Home/Error");
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            app.UseHsts();
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+            ConfigureServices(builder);
+
+            WebApplication app = ConfigureApp(builder);
+
+            app.Run();
         }
 
-        app.UseHttpsRedirection();
-        app.UseStaticFiles();
+        private static void ConfigureServices(WebApplicationBuilder builder)
+        {
+            string connection = builder.Configuration.GetConnectionString(DEFAULT_CONNECTION)!;
 
-        app.UseRouting();
+            IServiceCollection services = builder.Services;
 
-        app.UseAuthorization();
+            services.AddDbContext<SalesWebMVCContext>(options =>
+                    options.UseMySql(connection, ServerVersion.AutoDetect(connection), builder =>
+                        builder.MigrationsAssembly(MIGRATION_ASSEMBLY)));
 
-        app.MapControllerRoute(
-            name: "default",
-            pattern: "{controller=Home}/{action=Index}/{id?}");
+            services.AddScoped<SeedingService>();
+            services.AddScoped<SellerService>();
+            services.AddScoped<DepartmentService>();
+            services.AddScoped<SalesRecordsService>();
 
-        app.Run();
+            services.AddControllersWithViews();
+        }
+
+        private static WebApplication ConfigureApp(WebApplicationBuilder builder)
+        {
+            WebApplication app = builder.Build();
+
+            RequestLocalizationOptions localizationOptions = BuilderRequestLocalizationOptions();
+
+            app.UseRequestLocalization(localizationOptions);
+
+            if (!app.Environment.IsDevelopment())
+            {
+                Console.WriteLine("Not in development environment mode!");
+                app.UseExceptionHandler("/Home/Error");
+                app.UseHsts();
+            }
+            else
+            {
+                Console.WriteLine("It's in development environment mode!");
+                using IServiceScope serviceScoped = app.Services.CreateScope();
+                IServiceProvider serviceProvider = serviceScoped.ServiceProvider;
+                SeedingService seedingService = serviceProvider.GetRequiredService<SeedingService>();
+                seedingService.Seed();
+            }
+
+            app.UseHttpsRedirection();
+
+            app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            return app;
+        }
+
+        private static RequestLocalizationOptions BuilderRequestLocalizationOptions()
+        {
+            CultureInfo enUSCultureInfo = new("en-US");
+
+            List<CultureInfo> culturesInfo = new() { enUSCultureInfo };
+
+            return new RequestLocalizationOptions()
+            {
+                DefaultRequestCulture = new RequestCulture(enUSCultureInfo),
+                SupportedCultures = culturesInfo,
+                SupportedUICultures = culturesInfo,
+            };
+        }
     }
 }
