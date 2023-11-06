@@ -5,10 +5,10 @@
 }
 
 <h1>Details</h1>
+<h4>Department</h4>
+<hr />
 
 <div>
-    <h4>Department</h4>
-    <hr />
     <dl class="row">
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.Name)
@@ -17,8 +17,8 @@
             @Html.DisplayFor(model => model.Name)
         </dd>
     </dl>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-warning mt-4" role="button">Edit</a>
 </div>
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Index" class="btn btn-secondary mt-4" role="button">Back to List</a>
 </div>
