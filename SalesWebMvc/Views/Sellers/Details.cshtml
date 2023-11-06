@@ -5,7 +5,6 @@
 }
 
 <h2>@ViewData["Title"]</h2>
-
 <h4>Seller</h4>
 <hr />
 
@@ -30,14 +29,20 @@
             @Html.DisplayFor(model => model.BirthDate)
         </dd>
         <dt>
+            @Html.DisplayNameFor(model => model.BaseSalary)
+        </dt>
+        <dd>
+            $ @Html.DisplayFor(model => model.BaseSalary)
+        </dd>
+        <dt>
             @Html.DisplayNameFor(model => model.Department)
         </dt>
         <dd>
-            @Html.DisplayFor(model => model.Department.Name)
+            @Html.DisplayFor(model => model.Department!.Name)
         </dd>
     </dl>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning mt-4" role="button">Edit</a>
 </div>
 <div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-default">Edit</a>
-    <a asp-action="Index">Back to list</a>
+    <a asp-action="Index" class="btn btn-secondary mt-4" role="button">Back to list</a>
 </div>
