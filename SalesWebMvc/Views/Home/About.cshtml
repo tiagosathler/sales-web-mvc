@@ -4,8 +4,20 @@
 <h2>@ViewData["Title"]</h2>
 <h3>@ViewData["Message"]</h3>
 
-<p>Professor @ViewData["Professor"]</p>
-<p>Student @ViewData["Student"]</p>
+<dl>
+    <dt>
+        Professor
+    </dt>
+    <dd>
+        @ViewData["Professor"]
+    </dd>
+    <dt>
+        Student
+    </dt>
+    <dd>
+        @ViewData["Student"]
+    </dd>
+</dl>
 
 <address>
     <strong>More information: </strong> <a href="http://educandoweb.com.br">Educandoweb.com.br</a>
